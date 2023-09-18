@@ -51,8 +51,8 @@ public class BackwardContext extends AbstractStmtSwitch implements StmtPath, ICo
 	ValuePoint startPoint;
 	DGraph dg;
 
-	ArrayList<SootMethod> methodes;
-	ArrayList<Block> blockes;
+	ArrayList<SootMethod> methods;
+	ArrayList<Block> blocks;
 	Unit currentInstruction;
 
 	HashSet<Value> intrestedVariable;
@@ -67,8 +67,8 @@ public class BackwardContext extends AbstractStmtSwitch implements StmtPath, ICo
 	public BackwardContext(BackwardContext oldBc) {
 		startPoint = oldBc.getStartPoint();
 		dg = oldBc.getDg();
-		methodes = (ArrayList<SootMethod>) oldBc.getMethodes().clone();
-		blockes = (ArrayList<Block>) oldBc.getBlockes().clone();
+		methods = (ArrayList<SootMethod>) oldBc.getMethods().clone();
+		blocks = (ArrayList<Block>) oldBc.getBlocks().clone();
 		currentInstruction = oldBc.getCurrentInstruction();
 		intrestedVariable = (HashSet<Value>) oldBc.getIntrestedVariable().clone();
 		execTrace = (ArrayList<Stmt>) oldBc.getExecTrace().clone();
@@ -80,11 +80,11 @@ public class BackwardContext extends AbstractStmtSwitch implements StmtPath, ICo
 		this.startPoint = startPoint;
 		this.dg = dg;
 
-		methodes = new ArrayList<SootMethod>();
-		methodes.add(0, startPoint.getMethod_location());
+		methods = new ArrayList<SootMethod>();
+		methods.add(0, startPoint.getMethod_location());
 
-		blockes = new ArrayList<Block>();
-		blockes.add(0, startPoint.getBlock_location());
+		blocks = new ArrayList<Block>();
+		blocks.add(0, startPoint.getBlock_location());
 
 		intrestedVariable = new HashSet<Value>();
 		execTrace = new ArrayList<Stmt>();
@@ -116,7 +116,7 @@ public class BackwardContext extends AbstractStmtSwitch implements StmtPath, ICo
 
 	public boolean backWardHasFinished() {
 		// return intrestedVariable.size() == 0;
-		return finished || intrestedVariable.size() == 0 || this.getMethodes().size() > Config.MAXMETHODCHAINLEN;
+		return finished || intrestedVariable.size() == 0 || this.getMethods().size() > Config.MAXMETHODCHAINLEN;
 	}
 
 	public List<BackwardContext> oneStepBackWard() {
@@ -303,8 +303,8 @@ public class BackwardContext extends AbstractStmtSwitch implements StmtPath, ICo
 			}
 		}
 
-		this.setCurrentMethod(citem.getSmethd());
-		// Logger.print(this.hashCode() + "back to " + citem.getSmethd());
+		this.setCurrentMethod(citem.getSootMethod());
+		// Logger.print(this.hashCode() + "back to " + citem.getSootMethod());
 		this.setCurrentBlock(citem.getBlcok());
 		this.setCurrentInstruction(citem.getCurrentInstruction());
 
@@ -327,27 +327,27 @@ public class BackwardContext extends AbstractStmtSwitch implements StmtPath, ICo
 	}
 
 	public SootMethod getCurrentMethod() {
-		return getMethodes().get(0);
+		return getMethods().get(0);
 	}
 
 	public void setCurrentMethod(SootMethod currentMethod) {
-		this.getMethodes().add(0, currentMethod);
+		this.getMethods().add(0, currentMethod);
 	}
 
 	public Block getCurrentBlock() {
-		return getBlockes().get(0);
+		return getBlocks().get(0);
 	}
 
 	public void setCurrentBlock(Block currentBlock) {
-		getBlockes().add(0, currentBlock);
+		getBlocks().add(0, currentBlock);
 	}
 
-	public ArrayList<SootMethod> getMethodes() {
-		return methodes;
+	public ArrayList<SootMethod> getMethods() {
+		return methods;
 	}
 
-	public ArrayList<Block> getBlockes() {
-		return blockes;
+	public ArrayList<Block> getBlocks() {
+		return blocks;
 	}
 
 	public Unit getCurrentInstruction() {
@@ -708,11 +708,11 @@ public class BackwardContext extends AbstractStmtSwitch implements StmtPath, ICo
 
 	public JSONObject toJson() {
 		JSONObject result = new JSONObject();
-		for (SootMethod sm : methodes) {
-			result.append("methodes", sm.toString());
+		for (SootMethod sm : methods) {
+			result.append("methods", sm.toString());
 		}
-		for (Block blk : blockes) {
-			result.append("blockes", blk.hashCode());
+		for (Block blk : blocks) {
+			result.append("blocks", blk.hashCode());
 		}
 		for (Stmt stmt : execTrace) {
 			result.append("execTrace", stmt.toString());

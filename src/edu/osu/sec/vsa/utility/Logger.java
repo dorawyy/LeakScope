@@ -10,7 +10,7 @@ public class Logger {
 	public static void printW(String args) {
 		String str = TAG + "[W]" + args;
 		System.out.println(str);
-		FileUtility.wf("./logs/warnning.txt", str, true);
+		FileUtility.wf("./logs/warning.txt", str, true);
 	}
 
 	public static void print(String args) {

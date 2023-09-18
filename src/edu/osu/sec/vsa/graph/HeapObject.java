@@ -15,6 +15,8 @@ public class HeapObject implements IDGNode {
 	DGraph dg;
 
 	SootField sootField;
+
+
 	boolean inited = false;
 	boolean solved = false;
 	ArrayList<ValuePoint> vps;
@@ -175,6 +177,14 @@ public class HeapObject implements IDGNode {
 		}
 
 		return sb.toString();
+	}
+
+	public SootField getSootField() {
+		return sootField;
+	}
+
+	public void setSootField(SootField sootField) {
+		this.sootField = sootField;
 	}
 
 	static HashMap<String, HeapObject> hos = new HashMap<String, HeapObject>();

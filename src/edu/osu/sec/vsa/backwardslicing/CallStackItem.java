@@ -6,25 +6,25 @@ import soot.Value;
 import soot.toolkits.graph.Block;
 
 public class CallStackItem {
-	SootMethod smethd;
+	SootMethod sm;
 	Block blcok;
 	Unit currentInstruction;
 	Value returnTarget;
 
-	public CallStackItem(SootMethod smethd, Block blcok, Unit currentInstruction, Value returnTarget) {
+	public CallStackItem(SootMethod sm, Block blcok, Unit currentInstruction, Value returnTarget) {
 		super();
-		this.smethd = smethd;
+		this.sm = sm;
 		this.blcok = blcok;
 		this.currentInstruction = currentInstruction;
 		this.returnTarget = returnTarget;
 	}
 
-	public SootMethod getSmethd() {
-		return smethd;
+	public SootMethod getSootMethod() {
+		return sm;
 	}
 
-	public void setSmethd(SootMethod smethd) {
-		this.smethd = smethd;
+	public void setSootMethod(SootMethod sm) {
+		this.sm = sm;
 	}
 
 	public Block getBlcok() {

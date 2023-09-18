@@ -87,7 +87,7 @@ public class ApkContext {
 		afp = new ARSCFileParser();
 		afp.parse(apkh.getInputStream("resources.arsc"));
 		try {
-			mfest = new ProcessManifest(apkh.getInputStream("AndroidManifest.xml"));
+			mfest = new ProcessManifest(path);
 		} catch (Exception e) {
 		}
 		ExtFile apkFile = new ExtFile(new File(path));

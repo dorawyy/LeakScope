@@ -95,11 +95,11 @@ public class StmtPoint {
 	public static List<StmtPoint> findSetter(SootField sootField) {
 		List<StmtPoint> sps = new ArrayList<StmtPoint>();
 
-		HashSet<SootMethod> mthdes = CallGraph.getSetter(sootField);
+		HashSet<SootMethod> methods = CallGraph.getSetter(sootField);
 		CompleteBlockGraph cbg;
 		Block block;
-		if (mthdes != null) {
-			for (SootMethod mthd : mthdes) {
+		if (methods != null) {
+			for (SootMethod mthd : methods) {
 				PatchingChain<Unit> us = mthd.retrieveActiveBody().getUnits();
 				for (Unit unit : us) {
 					if (unit instanceof Stmt) {

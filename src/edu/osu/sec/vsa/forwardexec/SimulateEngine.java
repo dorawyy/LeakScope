@@ -73,7 +73,7 @@ public class SimulateEngine extends AbstractStmtSwitch {
 	}
 
 	@SuppressWarnings("unchecked")
-	public void transferValuesAndAppend(Stmt stmt, Value from, Value to, Value arg, boolean apdontheold, boolean delold) {
+	public void transferValuesAndAppend(Stmt stmt, Value from, Value to, Value arg, boolean apdOnOld, boolean delOld) {
 		if (!this.getCurrentValues().containsKey(from)) {
 			this.getCurrentValues().remove(to);
 			return;
@@ -100,11 +100,11 @@ public class SimulateEngine extends AbstractStmtSwitch {
 			}
 		}
 
-		if (apdontheold) {
+		if (apdOnOld) {
 			this.getCurrentValues().put(from, newValues);
 		}
 
-		if (delold) {
+		if (delOld) {
 			this.getCurrentValues().remove(from);
 		}
 
@@ -133,10 +133,11 @@ public class SimulateEngine extends AbstractStmtSwitch {
 		Unit lastUnit = getSpath().getStmtPathTail();
 
 		for (Stmt stmt : getSpath().getStmtPath()) {
+			Logger.print("[SimulateEngine.simulate] simulating stmt: " + stmt.toString());
 			if (stmt == lastUnit) {
 				return;
 			}
-			String oldv = getPrintableValues();
+			String oldv = getPrintableValues(); // return empty string when current value is empty
 			Logger.print("[SIMULATE]" + this.hashCode() + ": " + stmt + " " + stmt.getClass());
 			if (stmt instanceof ParameterTransferStmt) {
 				caseAssignStmt((AssignStmt) stmt);
@@ -144,19 +145,35 @@ public class SimulateEngine extends AbstractStmtSwitch {
 				stmt.apply(this);
 			}
 			String newv = getPrintableValues();
-			Logger.print(oldv + "\n====>\n" + newv);
+			Logger.print("old value: '" + oldv + "'");
+			Logger.print("===>");
+			Logger.print("new value: '" + newv + "'");
+			// Logger.print(oldv + "\n====>\n" + newv);
 		}
 	}
 
 	@Override
-	public void caseInvokeStmt(InvokeStmt stmt) {
-		// TODO Auto-generated method stub
-		
-		String msig = stmt.getInvokeExpr().getMethod().toString();
-		InvokeExpr vie =  stmt.getInvokeExpr();
-		if (msig.equals("<java.lang.StringBuilder: java.lang.StringBuilder append(java.lang.String)>")) {
-			transferValuesAndAppend(stmt, ((VirtualInvokeExpr) vie).getBase(), ((VirtualInvokeExpr) vie).getBase(), vie.getArg(0), true, false);
-		}else{
+	public void caseInvokeStmt(InvokeStmt stmt) {		
+		String mSig = stmt.getInvokeExpr().getMethod().toString(); // get the called method
+		InvokeExpr invokeExpr =  stmt.getInvokeExpr();
+		if (mSig.equals("<java.lang.StringBuilder: java.lang.StringBuilder append(java.lang.String)>")) {
+			Value from = ((VirtualInvokeExpr) invokeExpr).getBase();
+			Value to = ((VirtualInvokeExpr) invokeExpr).getBase();
+			Value arg = invokeExpr.getArg(0);
+			transferValuesAndAppend(stmt, from, to, arg, true, false);
+		} else if(mSig.equals("<java.lang.StringBuilder: java.lang.StringBuilder append(char)>")) {
+			Value from = ((VirtualInvokeExpr) invokeExpr).getBase();
+			Value to = ((VirtualInvokeExpr) invokeExpr).getBase();
+			Value arg = invokeExpr.getArg(0);
+			transferValuesAndAppend(stmt, from, to, arg, true, false);
+			// TODO lgoic here is incorrect, to fix
+		} else if (mSig.equals("<java.lang.StringBuilder: java.lang.StringBuilder append(java.lang.Object)>")) {
+			// TODO
+		} else if(mSig.equals("<java.lang.String: java.lang.String replace(java.lang.CharSequence,java.lang.CharSequence")) {
+			// TODO: replace value 
+		} else if (mSig.equals("<java.lang.StringBuilder: void <init>()>")) {
+			// TODO don't need to do anything
+		} else{
 			super.caseInvokeStmt(stmt);
 		}
 		
@@ -165,22 +182,32 @@ public class SimulateEngine extends AbstractStmtSwitch {
 	@SuppressWarnings("unchecked")
 	@Override
 	public void caseAssignStmt(AssignStmt stmt) {
-		// TODO Auto-generated method stub
 		Value leftop = stmt.getLeftOp();
 		Value rightop = stmt.getRightOp();
 		if (leftop instanceof Local || leftop instanceof ParameterRef || leftop instanceof ArrayRef) {
 			if (rightop instanceof InvokeExpr) {
-				InvokeExpr vie = (InvokeExpr) rightop;
-				String msig = vie.getMethod().toString();
-				if (msig.equals("<java.lang.StringBuilder: java.lang.StringBuilder append(java.lang.String)>")) {
+				InvokeExpr invokeExpr = (InvokeExpr) rightop;
+				String mSig = invokeExpr.getMethod().toString();
+				if (mSig.equals("<java.lang.StringBuilder: java.lang.StringBuilder append(java.lang.String)>")) {
 					GlobalStatistics.getInstance().countAppendString();
-					transferValuesAndAppend(stmt, ((VirtualInvokeExpr) vie).getBase(), leftop, vie.getArg(0), true, false);
-				} else if (msig.equals("<android.content.Context: java.lang.String getString(int)>") || msig.equals("<android.content.res.Resources: java.lang.String getString(int)>")) {
+					Value baseObj = ((VirtualInvokeExpr) invokeExpr).getBase();
+					Value arg = invokeExpr.getArg(0);
+					transferValuesAndAppend(stmt, baseObj, leftop, arg, true, false);
+				} else if (mSig.equals("<java.lang.StringBuilder: java.lang.String toString()>")) {
+					Value baseObj = ((VirtualInvokeExpr) invokeExpr).getBase();
+					transferValues(baseObj, leftop);
+				} else if (mSig.equals("<java.lang.String: java.lang.String trim()>")) {
+					Value baseObj = ((VirtualInvokeExpr) invokeExpr).getBase();
+					transferValues(baseObj, leftop);
+				} else if (mSig.equals("<java.lang.String: java.lang.String format(java.lang.String,java.lang.Object[])>")) {
+					GlobalStatistics.getInstance().countFormatString();
+					FunctionUtility.String_format(this, leftop, invokeExpr);
+				} else if (mSig.equals("<android.content.Context: java.lang.String getString(int)>") || mSig.equals("<android.content.res.Resources: java.lang.String getString(int)>")) { // get string from Android resource 
 					GlobalStatistics.getInstance().countGetString();
-					if (vie.getArg(0) instanceof IntConstant) {
-						setInitValue(leftop, ApkContext.getInstance().findResource(((IntConstant) vie.getArg(0)).value), false);
-					} else if (this.getCurrentValues().get(vie.getArg(0)).size() > 0) {
-						for (String str : (HashSet<String>) this.getCurrentValues().get(vie.getArg(0)).clone()) {
+					if (invokeExpr.getArg(0) instanceof IntConstant) {
+						setInitValue(leftop, ApkContext.getInstance().findResource(((IntConstant) invokeExpr.getArg(0)).value), false);
+					} else if (this.getCurrentValues().get(invokeExpr.getArg(0)).size() > 0) {
+						for (String str : (HashSet<String>) this.getCurrentValues().get(invokeExpr.getArg(0)).clone()) {
 							this.getCurrentValues().remove(leftop);
 							if (OtherUtility.isInt(str)) {
 								setInitValue(leftop, ApkContext.getInstance().findResource(Integer.parseInt(str)), true);
@@ -189,28 +216,20 @@ public class SimulateEngine extends AbstractStmtSwitch {
 							}
 						}
 					} else {
-						Logger.printW(String.format("[%s] [SIMULATE][arg not int getString(VirtualInvokeExpr)]: %s (%s)", this.hashCode(), stmt, vie.getArg(0).getClass()));
+						Logger.printW(String.format("[%s] [SIMULATE][arg not int getString(VirtualInvokeExpr)]: %s (%s)", this.hashCode(), stmt, invokeExpr.getArg(0).getClass()));
 					}
-				} else if (msig.equals("<java.lang.StringBuilder: java.lang.String toString()>")) {
-					transferValues(((VirtualInvokeExpr) vie).getBase(), leftop);
-				} else if (msig.equals("<java.lang.String: java.lang.String trim()>")) {
-					transferValues(((VirtualInvokeExpr) vie).getBase(), leftop);
-				} else if (msig.equals("<android.content.Context: java.lang.String getPackageName()>")) {
+				} else if (mSig.equals("<android.content.Context: java.lang.String getPackageName()>")) {
 					setInitValue(leftop, ApkContext.getInstance().getPackageName(), false);
-				} else if (msig.equals("<android.content.res.Resources: int getIdentifier(java.lang.String,java.lang.String,java.lang.String)>")) {
+				} else if (mSig.equals("<android.content.res.Resources: int getIdentifier(java.lang.String,java.lang.String,java.lang.String)>")) {
 					this.getCurrentValues().remove(leftop);
-					for (String p1 : this.getContent(vie.getArg(0))) {
-						for (String p2 : this.getContent(vie.getArg(1))) {
-							// for (String p3 : this.getContent(vie.getArg(2)))
+					for (String p1 : this.getContent(invokeExpr.getArg(0))) {
+						for (String p2 : this.getContent(invokeExpr.getArg(1))) {
+							// for (String p3 : this.getContent(invokeExpr.getArg(2)))
 							// {
 							setInitValue(leftop, ApkContext.getInstance().getIdentifier(p1, p2, null), true);
 							// }
 						}
 					}
-
-				} else if (msig.equals("<java.lang.String: java.lang.String format(java.lang.String,java.lang.Object[])>")) {
-					GlobalStatistics.getInstance().countFormatString();
-					FunctionUtility.String_format(this, leftop, vie);
 				} else {
 					Logger.printW(String.format("[%s] [SIMULATE][right unknown(VirtualInvokeExpr)]: %s (%s)", this.hashCode(), stmt, rightop.getClass()));
 				}
@@ -221,18 +240,20 @@ public class SimulateEngine extends AbstractStmtSwitch {
 				} else {
 					Logger.printW(String.format("[%s] [SIMULATE][right unknown(NewExpr)]: %s (%s)", this.hashCode(), stmt, rightop.getClass()));
 				}
-			} else if (rightop instanceof FieldRef) {
+			} else if (rightop instanceof FieldRef) { /* variable = fieldRef */
 				HeapObject ho = HeapObject.getInstance(dg, ((FieldRef) rightop).getField());
 				if (ho != null) {
 					if (ho.inited() && ho.hasSolved()) {
 						HashSet<String> nv = new HashSet<String>();
 						ArrayList<HashMap<Integer, HashSet<String>>> hoResult = ho.getResult();
+						Logger.print(" [SIMULATE][caseAssignStmt] HeapObject results size: " + hoResult.size() + " and this.getCurrentValues() become: ");
 						for (HashMap<Integer, HashSet<String>> var : hoResult) {
 							nv.addAll(var.get(-1));
 						}
 						this.getCurrentValues().put(leftop, nv);
+						Logger.print(this.getCurrentValues().toString());
 					} else {
-						Logger.printW(String.format("[%s] [SIMULATE][HeapObject not inited or Solved]: %s (%s)", this.hashCode(), stmt, ho.inited()));
+						Logger.printW(String.format("[%s] [SIMULATE][HeapObject not inited or Solved]: %s (inited? %s solved? %s)", this.hashCode(), stmt, ho.inited(), ho.hasSolved()));
 					}
 				} else {
 					Logger.printW(String.format("[%s] [SIMULATE][HeapObject not found]: %s (%s)", this.hashCode(), stmt, rightop.getClass()));

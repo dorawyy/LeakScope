@@ -81,8 +81,6 @@ public class ValuePoint implements IDGNode {
 
 	@Override
 	public Set<IDGNode> getDependents() {
-		// TODO Auto-generated method stub
-
 		HashSet<IDGNode> dps = new HashSet<IDGNode>();
 		for (BackwardContext bc : bcs) {
 			for (IDGNode node : bc.getDependentHeapObjects()) {
@@ -94,7 +92,6 @@ public class ValuePoint implements IDGNode {
 
 	@Override
 	public int getUnsovledDependentsCount() {
-		// TODO Auto-generated method stub
 		int count = 0;
 		for (IDGNode node : getDependents()) {
 			if (!node.hasSolved()) {
@@ -151,7 +148,7 @@ public class ValuePoint implements IDGNode {
 			tmp.simulate();
 			mergeResult(var, tmp);
 		}
-
+		System.out.println("[ValuePoint.solve()] result: " + result.toString());
 	}
 
 	public void mergeResult(BackwardContext var, SimulateEngine tmp) {

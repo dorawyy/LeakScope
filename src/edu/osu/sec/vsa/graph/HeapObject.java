@@ -23,16 +23,23 @@ public class HeapObject implements IDGNode {
 	HashSet<ValuePoint> solvedVps = new HashSet<ValuePoint>();
 
 	ArrayList<HashMap<Integer, HashSet<String>>> result = new ArrayList<HashMap<Integer, HashSet<String>>>();
+	static HashMap<String, HeapObject> hos = new HashMap<String, HeapObject>();
 
 	private HeapObject(DGraph dg, SootField sootField) {
 		this.dg = dg;
 		this.sootField = sootField;
 	}
 
+	public static HeapObject getInstance(DGraph dg, SootField sootField) {
+		String str = sootField.toString();
+		if (!hos.containsKey(str)) {
+			hos.put(str, new HeapObject(dg, sootField));
+		}
+		return hos.get(str);
+	}
+
 	@Override
 	public Set<IDGNode> getDependents() {
-		// TODO Auto-generated method stub
-
 		HashSet<IDGNode> dps = new HashSet<IDGNode>();
 		for (ValuePoint vp : vps) {
 			dps.add(vp);
@@ -43,7 +50,6 @@ public class HeapObject implements IDGNode {
 
 	@Override
 	public int getUnsovledDependentsCount() {
-		// TODO Auto-generated method stub
 		int count = 0;
 		for (IDGNode vp : getDependents()) {
 			if (!vp.hasSolved()) {
@@ -55,18 +61,17 @@ public class HeapObject implements IDGNode {
 
 	@Override
 	public boolean hasSolved() {
-		// TODO Auto-generated method stub
 		return solved;
 	}
 
 	@Override
 	public void solve() {
-		// TODO Auto-generated method stub
 		solved = true;
-		Logger.print("[HEAP SOLVE]" + sootField);
-		Logger.print("[SOLVING ME]" + this.hashCode());
+		Logger.print("[HEAP SOLVE]" + sootField + " (" + this.hashCode() + ")");
+		// Logger.print("[HEAP SOLVE] soot field has " + vps.size() + " value points");
 
 		for (ValuePoint vp : vps) {
+			// Logger.print("[HEAP SOLVE] vp result is " + vp.toString());
 			ArrayList<HashMap<Integer, HashSet<String>>> vpResult = vp.getResult();
 			for (HashMap<Integer, HashSet<String>> res : vpResult) {
 				if (res.containsKey(-1)) {
@@ -74,6 +79,7 @@ public class HeapObject implements IDGNode {
 				}
 			}
 		}
+		Logger.print("[HEAP SOLVE]" + sootField + " heap result is: " + result.toString());
 	}
 
 	@Override
@@ -98,7 +104,6 @@ public class HeapObject implements IDGNode {
 
 	@Override
 	public void initIfHavenot() {
-		// TODO Auto-generated method stub
 		vps = new ArrayList<ValuePoint>();
 		ValuePoint tmp;
 		List<StmtPoint> sps = StmtPoint.findSetter(sootField);
@@ -106,14 +111,13 @@ public class HeapObject implements IDGNode {
 			tmp = new ValuePoint(dg, sp.getMethod_location(), sp.getBlock_location(), sp.getInstruction_location(), Collections.singletonList(-1));
 			vps.add(tmp);
 		}
-		Logger.print("[HEAP INIT]" + sootField + " " + StmtPoint.findSetter(sootField).size());
+		Logger.print("[HEAP INIT]" + sootField + " has " + StmtPoint.findSetter(sootField).size() + " setter");
 		inited = true;
 
 	}
 
 	@Override
 	public boolean inited() {
-		// TODO Auto-generated method stub
 		return inited;
 	}
 
@@ -149,7 +153,6 @@ public class HeapObject implements IDGNode {
 
 	@Override
 	public String toString() {
-		// TODO Auto-generated method stub
 		if (!inited)
 			return super.toString();
 		StringBuilder sb = new StringBuilder();
@@ -185,16 +188,6 @@ public class HeapObject implements IDGNode {
 
 	public void setSootField(SootField sootField) {
 		this.sootField = sootField;
-	}
-
-	static HashMap<String, HeapObject> hos = new HashMap<String, HeapObject>();
-
-	public static HeapObject getInstance(DGraph dg, SootField sootField) {
-		String str = sootField.toString();
-		if (!hos.containsKey(str)) {
-			hos.put(str, new HeapObject(dg, sootField));
-		}
-		return hos.get(str);
 	}
 
 }

@@ -30,10 +30,11 @@ public class CallGraph {
 		String str;
 		for (SootClass sclas : Scene.v().getClasses()) {
 			for (SootMethod smthd : sclas.getMethods()) {
+				// System.out.println("[CallGraph.init] method " + smthd.getSignature().toString());
 				tmp = new CallGraphNode(smthd);
 				nodes.put(smthd.toString(), tmp);
 				if (smthd.isConcrete())
-					smthd.retrieveActiveBody();
+					smthd.retrieveActiveBody(); // can throw exception when MethodSource is empty
 			}
 		}
 		Logger.printI("[CG time]:" + (System.currentTimeMillis() - st));
